@@ -74,11 +74,11 @@ describe('Contoso API', () => {
     const body = await res.json();
     assert.equal(body.retirementAge, 63);
     assert.equal(body.retirementDate, '2029-06-30');
-    assert.equal(body.yearsToRetirement, 3);
-    assert.equal(body.futureAccrual, 3_379.11);
+    assert.equal(body.yearsToRetirement, 2);
+    assert.equal(body.futureAccrual, 2_252.74);
     assert.equal(body.earlyRetirementReduction, 0.325);
-    assert.equal(body.unreducedAnnualPension, 13_802.81);
-    assert.equal(body.projectedAnnualPension, 9_316.9);
+    assert.equal(body.unreducedAnnualPension, 12_676.44);
+    assert.equal(body.projectedAnnualPension, 8_556.6);
   });
 
   test('POST /api/projections accepts every integer age from 60 through 68', async () => {

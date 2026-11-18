@@ -40,10 +40,10 @@ test('projection at the standard retirement age adds future accrual', () => {
   const result = projectPension({
     birthDate: '1972-04-15', fullTimeSalary: 52_000, partTimeFactor: 1, accruedToDate: 5_000, asOf: '2026-11-18',
   });
-  assert.equal(result.yearsToRetirement, 14);
-  assert.equal(result.futureAccrual, 8_441.44);
-  assert.equal(result.projectedAnnualPension, 13_441.44);
-  assert.equal(result.unreducedAnnualPension, 13_441.44);
+  assert.equal(result.yearsToRetirement, 13);
+  assert.equal(result.futureAccrual, 7_838.48);
+  assert.equal(result.projectedAnnualPension, 12_838.48);
+  assert.equal(result.unreducedAnnualPension, 12_838.48);
   assert.equal(result.earlyRetirementReduction, 0);
   assert.equal(result.retirementDate, '2040-04-15');
 });
@@ -54,11 +54,24 @@ test('R5 reduces the total pension at 63 and stops accrual at that age', () => {
     asOf: '2026-11-18', retirementAge: 63,
   });
   assert.equal(result.retirementDate, '2029-06-30');
-  assert.equal(result.yearsToRetirement, 3);
-  assert.equal(result.futureAccrual, 3_379.11);
+  assert.equal(result.yearsToRetirement, 2);
+  assert.equal(result.futureAccrual, 2_252.74);
   assert.equal(result.earlyRetirementReduction, 0.325);
-  assert.equal(result.unreducedAnnualPension, 13_802.81);
-  assert.equal(result.projectedAnnualPension, 9_316.9);
+  assert.equal(result.unreducedAnnualPension, 12_676.44);
+  assert.equal(result.projectedAnnualPension, 8_556.6);
+});
+
+test('R5 counts completed accrual years around the retirement birthday', () => {
+  const input = {
+    birthDate: '1966-06-30', fullTimeSalary: 98_000, partTimeFactor: 0.8, accruedToDate: 10_423.7,
+    retirementAge: 63,
+  };
+  const beforeBirthday = projectPension({ ...input, asOf: '2026-06-29' });
+  const afterBirthday = projectPension({ ...input, asOf: '2026-07-01' });
+
+  assert.equal(beforeBirthday.yearsToRetirement, 3);
+  assert.equal(afterBirthday.yearsToRetirement, 2);
+  assert.equal(afterBirthday.futureAccrual, 2_252.74);
 });
 
 test('R5 accepts retirement at the current age of 60 with no future accrual', () => {
