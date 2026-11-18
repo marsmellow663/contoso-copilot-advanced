@@ -49,6 +49,15 @@ describe('Contoso API', () => {
     assert.equal(statement.currentYearAccrual, 602.96);
   });
 
+  test('GET /api/members/:id/statement returns accrued pension for a member past retirement age', async () => {
+    const res = await api.get('/api/members/M-1006/statement?asOf=2028-11-05');
+    assert.equal(res.status, 200);
+    const statement = await res.json();
+    assert.equal(statement.age, 69);
+    assert.equal(statement.projectedPensionAtRetirement, statement.accruedPension);
+    assert.equal(statement.retirementDate, '2027-11-05');
+  });
+
   test('POST /api/projections projects at the standard retirement age', async () => {
     const res = await api.post('/api/projections', { memberId: 'M-1001' });
     assert.equal(res.status, 200);

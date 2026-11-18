@@ -1,4 +1,4 @@
-import { annualAccrual, pensionableSalary, projectPension, roundMoney, ageOn } from '../domain/pension.ts';
+import { annualAccrual, dateAtAge, pensionableSalary, projectPension, roundMoney, ageOn } from '../domain/pension.ts';
 import { SCHEME_2026 } from '../domain/scheme.ts';
 import type { ContributionRepository } from '../repositories/contributionRepository.ts';
 import type { Member } from '../repositories/types.ts';
@@ -32,24 +32,28 @@ export class StatementService {
     const currentPensionable = pensionableSalary(member.fullTimeSalary, 1);
     const currentYearAccrual = annualAccrual(currentPensionable);
 
-    const projection = projectPension({
-      birthDate: member.birthDate,
-      fullTimeSalary: member.fullTimeSalary,
-      partTimeFactor: member.partTimeFactor,
-      accruedToDate: accruedPension,
-      asOf,
-    });
+    const age = ageOn(member.birthDate, asOf);
+    const retirementDate = dateAtAge(member.birthDate, SCHEME_2026.retirementAge);
+    const projectedPensionAtRetirement = age > SCHEME_2026.retirementAge
+      ? accruedPension
+      : projectPension({
+        birthDate: member.birthDate,
+        fullTimeSalary: member.fullTimeSalary,
+        partTimeFactor: member.partTimeFactor,
+        accruedToDate: accruedPension,
+        asOf,
+      }).projectedAnnualPension;
 
     return {
       memberId: member.id,
       asOf,
-      age: ageOn(member.birthDate, asOf),
+      age,
       yearsOfService: history.length,
       accruedPension,
       currentPensionableSalary: currentPensionable,
       currentYearAccrual,
-      projectedPensionAtRetirement: projection.projectedAnnualPension,
-      retirementDate: projection.retirementDate,
+      projectedPensionAtRetirement,
+      retirementDate,
       scheme: SCHEME_2026.id,
     };
   }
