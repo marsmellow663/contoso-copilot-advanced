@@ -86,7 +86,7 @@ paths:
               required: [memberId]
               properties:
                 memberId: { type: string, example: M-1001 }
-                retirementAge: { type: integer, example: 68, description: 'Only 68 is supported today (early retirement is a backlog item).' }
+                retirementAge: { type: integer, minimum: 60, maximum: 68, default: 68, example: 63, description: "Must not be below the member's current age. Ages below 60, above 68 or below the current age return 422; non-integers return 400." }
                 salaryGrowthRate: { type: number, minimum: 0, maximum: 0.1, example: 0.02 }
       responses:
         '200': { description: Projection, content: { application/json: { schema: { $ref: '#/components/schemas/Projection' } } } }
@@ -198,7 +198,9 @@ components:
         yearsToRetirement: { type: integer }
         accruedToDate: { type: number }
         futureAccrual: { type: number }
-        projectedAnnualPension: { type: number }
+        earlyRetirementReduction: { type: number, description: 'Simple reduction as a fraction: 0.065 per year before 68; 0 at 68.', example: 0.325 }
+        unreducedAnnualPension: { type: number, description: 'Accrued pension plus future accrual through the selected retirement age, rounded to cents.' }
+        projectedAnnualPension: { type: number, description: 'Unreduced annual pension after applying the early-retirement reduction, rounded to cents.' }
         scheme: { type: string }
     ServiceRequest:
       type: object

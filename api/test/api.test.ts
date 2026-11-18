@@ -49,17 +49,69 @@ describe('Contoso API', () => {
     assert.equal(statement.currentYearAccrual, 602.96);
   });
 
+  test('GET /api/members/:id/statement returns accrued pension for a member past retirement age', async () => {
+    const res = await api.get('/api/members/M-1006/statement?asOf=2028-11-05');
+    assert.equal(res.status, 200);
+    const statement = await res.json();
+    assert.equal(statement.age, 69);
+    assert.equal(statement.projectedPensionAtRetirement, statement.accruedPension);
+    assert.equal(statement.retirementDate, '2027-11-05');
+  });
+
   test('POST /api/projections projects at the standard retirement age', async () => {
     const res = await api.post('/api/projections', { memberId: 'M-1001' });
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.retirementAge, 68);
+    assert.equal(body.earlyRetirementReduction, 0);
+    assert.equal(body.unreducedAnnualPension, body.projectedAnnualPension);
     assert.ok(body.projectedAnnualPension > body.accruedToDate);
   });
 
-  test('POST /api/projections returns 422 for early retirement (backlog)', async () => {
+  test('POST /api/projections applies R5 to M-1004 at 63 on 2026-11-18', async () => {
     const res = await api.post('/api/projections', { memberId: 'M-1004', retirementAge: 63 });
-    assert.equal(res.status, 422);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.retirementAge, 63);
+    assert.equal(body.retirementDate, '2029-06-30');
+    assert.equal(body.yearsToRetirement, 2);
+    assert.equal(body.futureAccrual, 2_252.74);
+    assert.equal(body.earlyRetirementReduction, 0.325);
+    assert.equal(body.unreducedAnnualPension, 12_676.44);
+    assert.equal(body.projectedAnnualPension, 8_556.6);
+  });
+
+  test('POST /api/projections accepts every integer age from 60 through 68', async () => {
+    for (let retirementAge = 60; retirementAge <= 68; retirementAge++) {
+      const res = await api.post('/api/projections', { memberId: 'M-1004', retirementAge });
+      assert.equal(res.status, 200, `age ${retirementAge}`);
+      const body = await res.json();
+      assert.equal(body.retirementAge, retirementAge);
+      if (retirementAge === 60) {
+        assert.equal(body.futureAccrual, 0);
+        assert.equal(body.earlyRetirementReduction, 0.52);
+      }
+    }
+  });
+
+  test('POST /api/projections returns the 422 envelope for R5 age violations', async () => {
+    for (const [memberId, retirementAge] of [['M-1004', 59], ['M-1004', 69], ['M-1006', 66]]) {
+      const res = await api.post('/api/projections', { memberId, retirementAge });
+      assert.equal(res.status, 422, `${memberId} at ${retirementAge}`);
+      const body = await res.json();
+      assert.equal(body.error.code, 'UNPROCESSABLE');
+      assert.ok(body.error.message.length > 0);
+    }
+  });
+
+  test('POST /api/projections keeps malformed retirement ages as 400 errors', async () => {
+    for (const retirementAge of [63.5, '63', null]) {
+      const res = await api.post('/api/projections', { memberId: 'M-1004', retirementAge });
+      assert.equal(res.status, 400);
+      const body = await res.json();
+      assert.equal(body.error.code, 'BAD_REQUEST');
+      assert.deepEqual(body.error.details, ['retirementAge must be an integer']);
+    }
   });
 
   test('POST /api/projections validates the body', async () => {
