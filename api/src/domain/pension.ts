@@ -99,7 +99,7 @@ export function projectPension(input: ProjectionInput, scheme: SchemeParameters 
   if (retirementAge < currentAge) {
     throw new RangeError("retirementAge must not be below the member's current age");
   }
-  const yearsToRetirement = retirementAge - currentAge;
+  const yearsToRetirement = Math.max(0, ageOn(input.asOf, dateAtAge(input.birthDate, retirementAge)));
 
   let futureAccrual = 0;
   let salary = input.fullTimeSalary;
